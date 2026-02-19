@@ -209,16 +209,29 @@ function getRandomColor() {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
+  const os = require('os');
+  const interfaces = os.networkInterfaces();
+  let localIP = 'localhost';
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        localIP = iface.address;
+        break;
+      }
+    }
+  }
+  
   console.log('');
   console.log('╔════════════════════════════════════════════════════════════╗');
   console.log('║                    基地已启动                               ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
   console.log('');
   console.log('📱 局域网访问:');
-  console.log(`   http://192.168.5.170:${PORT}`);
+  console.log(`   http://${localIP}:${PORT}`);
   console.log('');
   console.log('🌐 DDNS访问:');
-  console.log(`   http://maiyadi.myds.me:${PORT}`);
+  console.log(`   http://<你的域名>:${PORT}`);
   console.log('');
   console.log('✨ 功能说明:');
   console.log('   ✓ 用户注册和登录');
