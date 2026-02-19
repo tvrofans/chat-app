@@ -1,0 +1,19 @@
+{
+  "name": "chat-app",
+  "version": "2.0.0",
+  "description": "实时聊天应用 - 树莓派手机专用版",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "generate-cert": "bash generate-cert.sh",
+    "setup": "bash generate-cert.sh && node server.js"
+  },
+  "keywords": ["chat", "realtime", "raspberry-pi", "mobile"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.3"
+  }
+}

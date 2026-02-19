@@ -1,0 +1,17 @@
+[Unit]
+Description=Chat Application for Raspberry Pi
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/tmp/chat-app
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=chat-app
+
+[Install]
+WantedBy=multi-user.target
