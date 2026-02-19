@@ -139,7 +139,7 @@ switchBtn.addEventListener('click', () => {
     submitText.textContent = '登录';
     switchText.textContent = '还没有账号？';
     switchBtn.textContent = '注册';
-    document.querySelector('.login-header p').textContent = '请登录开始聊天';
+    document.querySelector('.login-header p').textContent = '登录后进入基地';
   }
   loginError.style.display = 'none';
   loginSuccess.style.display = 'none';
