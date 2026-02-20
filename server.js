@@ -17,9 +17,16 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 1314;
 const USERS_FILE = path.join(__dirname, 'users.json');
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
 const users = new Map();
 const messages = [];
+
+// 默认设置
+const defaultSettings = {
+  registrationOpen: true,
+  showHistory: false
+};
 
 function loadUsers() {
   try {
@@ -39,6 +46,34 @@ function saveUsers(usersData) {
   } catch (error) {
     console.error('保存用户数据失败:', error);
   }
+}
+
+function loadSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+      return { ...defaultSettings, ...JSON.parse(data) };
+    }
+  } catch (error) {
+    console.error('加载设置失败:', error);
+  }
+  return { ...defaultSettings };
+}
+
+function saveSettings(settings) {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  } catch (error) {
+    console.error('保存设置失败:', error);
+  }
+}
+
+function isAdmin(username) {
+  const usersData = loadUsers();
+  const userKeys = Object.keys(usersData);
+  if (userKeys.length === 0) return false;
+  // 第一个注册的用户是管理员
+  return userKeys[0] === username;
 }
 
 const storage = multer.diskStorage({
@@ -69,8 +104,57 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
+// 获取设置
+app.get('/api/settings', (req, res) => {
+  const settings = loadSettings();
+  res.json(settings);
+});
+
+// 获取管理员状态
+app.post('/api/admin-status', (req, res) => {
+  const { username } = req.body;
+  res.json({
+    isAdmin: isAdmin(username),
+    settings: loadSettings()
+  });
+});
+
+// 更新设置（仅管理员）
+app.post('/api/settings', (req, res) => {
+  const { username, settings } = req.body;
+  
+  if (!isAdmin(username)) {
+    return res.status(403).json({ success: false, message: '只有管理员可以修改设置' });
+  }
+  
+  saveSettings(settings);
+  res.json({ success: true, message: '设置已更新' });
+});
+
+// 清空聊天记录（仅管理员）
+app.post('/api/clear-messages', (req, res) => {
+  const { username } = req.body;
+  
+  if (!isAdmin(username)) {
+    return res.status(403).json({ success: false, message: '只有管理员可以清空记录' });
+  }
+  
+  messages.length = 0;
+  io.emit('messages_cleared');
+  res.json({ success: true, message: '聊天记录已清空' });
+});
+
 app.post('/api/register', (req, res) => {
   const { username, password } = req.body;
+  const settings = loadSettings();
+  
+  // 检查注册是否开放
+  if (!settings.registrationOpen) {
+    const usersData = loadUsers();
+    if (Object.keys(usersData).length > 0) {
+      return res.status(403).json({ success: false, message: '注册已关闭，请联系管理员' });
+    }
+  }
   
   if (!username || !password) {
     return res.status(400).json({ success: false, message: '用户名和密码不能为空' });
@@ -90,14 +174,21 @@ app.post('/api/register', (req, res) => {
     return res.status(400).json({ success: false, message: '用户名已存在' });
   }
   
+  const isFirstUser = Object.keys(usersData).length === 0;
+  
   usersData[username] = {
     password: password,
+    isAdmin: isFirstUser,
     createdAt: new Date().toISOString()
   };
   
   saveUsers(usersData);
   
-  res.json({ success: true, message: '注册成功，请登录' });
+  if (isFirstUser) {
+    res.json({ success: true, message: '注册成功！你是基地的第一个用户，已成为管理员' });
+  } else {
+    res.json({ success: true, message: '注册成功，请登录' });
+  }
 });
 
 app.post('/api/login', (req, res) => {
@@ -117,7 +208,11 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ success: false, message: '密码错误' });
   }
   
-  res.json({ success: true, message: '登录成功' });
+  res.json({ 
+    success: true, 
+    message: '登录成功',
+    isAdmin: isAdmin(username)
+  });
 });
 
 app.post('/api/upload', upload.single('image'), (req, res) => {
@@ -136,9 +231,13 @@ io.on('connection', (socket) => {
   console.log('用户连接:', socket.id);
   
   socket.on('user_join', (userData) => {
+    const isUserAdmin = isAdmin(userData.username);
+    const settings = loadSettings();
+    
     users.set(socket.id, {
       id: socket.id,
       username: userData.username,
+      isAdmin: isUserAdmin,
       color: getRandomColor(),
       joinTime: new Date()
     });
@@ -148,7 +247,12 @@ io.on('connection', (socket) => {
       userCount: users.size
     });
     
-    socket.emit('message_history', messages.slice(-50));
+    // 根据设置决定是否发送历史消息
+    if (settings.showHistory) {
+      socket.emit('message_history', messages.slice(-50));
+    }
+    
+    socket.emit('admin_status', { isAdmin: isUserAdmin });
     
     io.emit('user_count', users.size);
   });
@@ -160,6 +264,7 @@ io.on('connection', (socket) => {
     const message = {
       id: Date.now(),
       username: user.username,
+      isAdmin: user.isAdmin,
       color: user.color,
       content: data.content,
       type: data.type || 'text',
@@ -239,5 +344,6 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('   ✓ 发送表情');
   console.log('   ✓ 上传图片');
   console.log('   ✓ 相机拍照（局域网内支持）');
+  console.log('   ✓ 管理员功能');
   console.log('');
 });

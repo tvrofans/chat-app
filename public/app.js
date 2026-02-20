@@ -54,6 +54,18 @@ const closeCameraBtn = document.getElementById('close-camera-btn');
 const imagePreviewModal = document.getElementById('image-preview-modal');
 const previewImage = document.getElementById('preview-image');
 const closePreviewBtn = document.getElementById('close-preview-btn');
+const adminBtn = document.getElementById('admin-btn');
+const adminModal = document.getElementById('admin-modal');
+const closeAdminBtn = document.getElementById('close-admin-btn');
+const registrationSwitch = document.getElementById('registration-switch');
+const historySwitch = document.getElementById('history-switch');
+const clearMessagesBtn = document.getElementById('clear-messages-btn');
+
+let isAdmin = false;
+let currentSettings = {
+  registrationOpen: true,
+  showHistory: false
+};
 
 function updateTimeTheme() {
   const hour = new Date().getHours();
@@ -271,6 +283,19 @@ function connectSocket() {
       typingIndicator.style.display = 'none';
     }
   });
+
+  socket.on('admin_status', (data) => {
+    isAdmin = data.isAdmin;
+    if (isAdmin) {
+      adminBtn.classList.remove('hidden');
+      loadAdminSettings();
+    }
+  });
+
+  socket.on('messages_cleared', () => {
+    messagesDiv.innerHTML = '';
+    addSystemMessage('管理员清空了聊天记录');
+  });
 }
 
 function addMessage(message) {
@@ -290,14 +315,16 @@ function addMessage(message) {
     content = escapeHtml(message.content);
   }
   
+  const adminBadge = message.isAdmin ? '<span class="admin-badge">👑</span>' : '';
+  
   messageDiv.innerHTML = `
     <div class="message-wrapper">
-      <div class="message-avatar" style="background: ${message.color}">
+      <div class="message-avatar ${message.isAdmin ? 'admin' : ''}" style="background: ${message.color}">
         ${message.username[0].toUpperCase()}
       </div>
       <div class="message-content">
         <div class="message-header">
-          <span class="message-username" style="color: ${message.color}">${escapeHtml(message.username)}</span>
+          <span class="message-username" style="color: ${message.color}">${escapeHtml(message.username)}${adminBadge}</span>
           <span class="message-time">${time}</span>
         </div>
         <div class="message-body">${content}</div>
@@ -550,3 +577,96 @@ document.addEventListener('touchmove', (e) => {
   }
   e.preventDefault();
 }, { passive: false });
+
+// 管理员功能
+async function loadAdminSettings() {
+  try {
+    const response = await fetch('/api/settings');
+    currentSettings = await response.json();
+    registrationSwitch.checked = currentSettings.registrationOpen;
+    historySwitch.checked = currentSettings.showHistory;
+  } catch (error) {
+    console.error('加载设置失败:', error);
+  }
+}
+
+async function saveAdminSettings() {
+  if (!isAdmin) return;
+  
+  try {
+    const response = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser.username,
+        settings: currentSettings
+      })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      // 设置已保存
+    }
+  } catch (error) {
+    console.error('保存设置失败:', error);
+  }
+}
+
+async function clearAllMessages() {
+  if (!isAdmin) return;
+  
+  if (!confirm('确定要清空所有聊天记录吗？此操作不可恢复。')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/clear-messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUser.username })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      messagesDiv.innerHTML = '';
+      addSystemMessage('管理员清空了聊天记录');
+      adminModal.classList.add('hidden');
+    }
+  } catch (error) {
+    console.error('清空消息失败:', error);
+  }
+}
+
+// 管理按钮事件
+adminBtn.addEventListener('click', () => {
+  vibrate();
+  adminModal.classList.remove('hidden');
+});
+
+closeAdminBtn.addEventListener('click', () => {
+  vibrate();
+  adminModal.classList.add('hidden');
+});
+
+registrationSwitch.addEventListener('change', (e) => {
+  vibrate();
+  currentSettings.registrationOpen = e.target.checked;
+  saveAdminSettings();
+});
+
+historySwitch.addEventListener('change', (e) => {
+  vibrate();
+  currentSettings.showHistory = e.target.checked;
+  saveAdminSettings();
+});
+
+clearMessagesBtn.addEventListener('click', () => {
+  vibrate();
+  clearAllMessages();
+});
+
+adminModal.addEventListener('click', (e) => {
+  if (e.target === adminModal) {
+    adminModal.classList.add('hidden');
+  }
+});

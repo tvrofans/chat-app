@@ -58,14 +58,22 @@
             <span id="user-count">0</span> 人在线
           </div>
         </div>
-        <button id="logout-btn" class="logout-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-          <span>退出</span>
-        </button>
+        <div class="header-actions">
+          <button id="admin-btn" class="admin-btn hidden" title="管理">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <button id="logout-btn" class="logout-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>退出</span>
+          </button>
+        </div>
       </div>
 
       <div id="messages-container" class="messages-container">
@@ -149,6 +157,54 @@
     <div class="modal-content image-preview-content">
       <img id="preview-image" src="" alt="预览">
       <button id="close-preview-btn" class="close-btn">&times;</button>
+    </div>
+  </div>
+
+  <div id="admin-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>管理设置</h3>
+        <button id="close-admin-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="admin-content">
+        <div class="admin-info">
+          <span class="admin-badge">👑 管理员</span>
+        </div>
+        
+        <div class="admin-settings">
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">新用户注册</span>
+              <span class="setting-desc">允许新用户注册账号</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="registration-switch">
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-label">显示历史消息</span>
+              <span class="setting-desc">新用户登录后可以看到之前的聊天记录</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="history-switch">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="admin-actions">
+          <button id="clear-messages-btn" class="danger-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>清空所有聊天记录</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
